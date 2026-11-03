@@ -1,0 +1,13 @@
+name: TicTacToe
+version: 1.0.0
+main: com.cheonsa.tictactoe.TicTacToePlugin
+api-version: '1.21'
+description: Two-player Tic-Tac-Toe on a text display board (no resource pack).
+commands:
+  ttt:
+    description: Play Tic-Tac-Toe
+    usage: /ttt <challenge <player>|accept|leave>
+    permission: tictactoe.play
+permissions:
+  tictactoe.play:
+    default: true
