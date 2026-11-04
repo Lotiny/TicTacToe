@@ -10,8 +10,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent;
+import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 import org.bukkit.Location;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -34,6 +36,10 @@ public final class TicTacToePlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        // The jar's timestamp tells you at a glance whether the server picked up a new build.
+        getLogger().info("TicTacToe " + getPluginMeta().getVersion() + " enabled, jar built "
+                + java.time.Instant.ofEpochMilli(getFile().lastModified()).atZone(java.time.ZoneId.systemDefault())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         getServer().getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             tick++;
@@ -48,7 +54,7 @@ public final class TicTacToePlugin extends JavaPlugin implements Listener {
 
     void remove(Game g) {
         games.remove(g.x.getUniqueId());
-        games.remove(g.o.getUniqueId());
+        if (g.o != null) games.remove(g.o.getUniqueId());
     }
 
     // ------------------------------------------------------------------ commands
@@ -81,9 +87,6 @@ public final class TicTacToePlugin extends JavaPlugin implements Listener {
                 Player challenger = from == null ? null : Bukkit.getPlayer(from);
                 if (challenger == null) {
                     p.sendMessage(Component.text("You have no pending challenge.", NamedTextColor.RED));
-                } else if (!challenger.getWorld().equals(p.getWorld())
-                        || challenger.getLocation().distance(p.getLocation()) > 12) {
-                    p.sendMessage(Component.text("Stand within 12 blocks of " + challenger.getName() + " to play.", NamedTextColor.RED));
                 } else if (games.containsKey(p.getUniqueId()) || games.containsKey(challenger.getUniqueId())) {
                     p.sendMessage(Component.text("One of you is already in a game.", NamedTextColor.RED));
                 } else {
@@ -92,9 +95,19 @@ public final class TicTacToePlugin extends JavaPlugin implements Listener {
                     games.put(p.getUniqueId(), g);
                     Component msg = Component.text("[Tic-Tac-Toe] ", NamedTextColor.GOLD)
                             .append(Component.text(challenger.getName() + " is X, " + p.getName()
-                                    + " is O. Look at the board and left-click to play.", NamedTextColor.WHITE));
+                                    + " is O. Move the mouse to aim, click or press Space to select.", NamedTextColor.WHITE));
                     challenger.sendMessage(msg);
                     p.sendMessage(msg);
+                }
+            }
+            case "bot" -> {
+                if (games.containsKey(p.getUniqueId())) {
+                    p.sendMessage(Component.text("You're already in a game.", NamedTextColor.RED));
+                } else {
+                    games.put(p.getUniqueId(), new Game(this, p, null));
+                    p.sendMessage(Component.text("[Tic-Tac-Toe] ", NamedTextColor.GOLD)
+                            .append(Component.text("You are X, " + Game.BOT_NAME
+                                    + " is O. Move the mouse to aim, click or press Space to select.", NamedTextColor.WHITE)));
                 }
             }
             case "leave" -> {
@@ -111,7 +124,7 @@ public final class TicTacToePlugin extends JavaPlugin implements Listener {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
-        if (args.length == 1) return List.of("challenge", "accept", "leave");
+        if (args.length == 1) return List.of("challenge", "accept", "bot", "leave");
         if (args.length == 2 && args[0].equalsIgnoreCase("challenge")) return null; // player names
         return List.of();
     }
@@ -125,11 +138,22 @@ public final class TicTacToePlugin extends JavaPlugin implements Listener {
         Game g = games.get(p.getUniqueId());
         if (g == null) return;
         e.setCancelled(true); // never let the camera leave the player
-        if (g.view(p).hit(p) == null) return;
         int last = lastClick.getOrDefault(p.getUniqueId(), -100);
         if (tick - last < 4) return;
         lastClick.put(p.getUniqueId(), tick);
         g.click(p);
+    }
+
+    /** Sneaking would let go of the camera; keep it pinned to the board while in a game. */
+    @EventHandler
+    public void onStopSpectating(PlayerStopSpectatingEntityEvent e) {
+        if (games.containsKey(e.getPlayer().getUniqueId())) e.setCancelled(true);
+    }
+
+    /** Sneaking would also climb off the camera seat, which stops the mouse driving the cursor. */
+    @EventHandler
+    public void onDismount(EntityDismountEvent e) {
+        if (games.containsKey(e.getEntity().getUniqueId())) e.setCancelled(true);
     }
 
     /** Blocks the spectator hotbar's "teleport to player" while in a game. */

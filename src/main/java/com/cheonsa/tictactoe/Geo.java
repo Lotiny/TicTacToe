@@ -2,6 +2,7 @@ package com.cheonsa.tictactoe;
 
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 /**
@@ -41,6 +42,10 @@ final class Geo {
                 new AxisAngle4f(angle, 0, 0, 1),
                 new Vector3f(len / (BG_W * TP), th / (BG_H * TP), 1f),
                 new AxisAngle4f());
+    }
+
+    static Matrix4f mat(Transformation t) {
+        return new Matrix4f().translate(t.getTranslation()).rotate(t.getLeftRotation()).scale(t.getScale());
     }
 
     /** A text label centred on (cx, cy), scaled and rotated around its centre. */

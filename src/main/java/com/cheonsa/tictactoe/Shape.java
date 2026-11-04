@@ -2,6 +2,7 @@ package com.cheonsa.tictactoe;
 
 import org.bukkit.Color;
 import org.bukkit.entity.TextDisplay;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,18 @@ final class Shape {
             d.setInterpolationDelay(0);
             d.setInterpolationDuration(interp);
             d.setTransformation(parts.get(i).at(px, py, z, k));
+        }
+    }
+
+    /** Full matrix placement (e.g. sheared); {@code m} maps the shape's own coordinates to the board. */
+    void matrix(Matrix4f m, int interp) {
+        px = py = k = Float.NaN; // the next place() must not be skipped
+        for (int i = 0; i < ents.size(); i++) {
+            TextDisplay d = ents.get(i);
+            if (!d.isValid()) continue;
+            d.setInterpolationDelay(0);
+            d.setInterpolationDuration(interp);
+            d.setTransformationMatrix(new Matrix4f(m).mul(Geo.mat(parts.get(i).at(0, 0, z, 1))));
         }
     }
 

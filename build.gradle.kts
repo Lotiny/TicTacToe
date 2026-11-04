@@ -1,5 +1,6 @@
 plugins {
     java
+    id("xyz.jpenilla.run-paper") version "3.1.0"
 }
 
 group = "com.cheonsa"
@@ -16,4 +17,11 @@ dependencies {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+tasks.runServer {
+    minecraftVersion("1.21.11")
+    downloadPlugins {
+        modrinth("viaversion", "5.12.2")
+    }
 }

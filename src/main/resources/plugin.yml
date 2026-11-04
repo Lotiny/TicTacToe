@@ -6,7 +6,7 @@ description: Two-player Tic-Tac-Toe on a text display board (no resource pack).
 commands:
   ttt:
     description: Play Tic-Tac-Toe
-    usage: /ttt <challenge <player>|accept|leave>
+    usage: /ttt <challenge <player>|accept|bot|leave>
     permission: tictactoe.play
 permissions:
   tictactoe.play:
